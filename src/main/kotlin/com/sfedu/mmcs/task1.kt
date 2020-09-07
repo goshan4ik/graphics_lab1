@@ -57,19 +57,19 @@ class DrawingView: View() {
                                 margin = Insets(15.0)
                             }
                             action {
-                                val chart = Chart(leftXInput.text.toDouble(), rightXInput.text.toDouble(), canvas.width.toInt(), canvas.height.toInt(), {x: Double -> cos(x)})
-                                val functionChart = chart.drawChart()
+                                val chart = Chart(leftXInput.text.toDouble(), rightXInput.text.toDouble(), canvas.width, canvas.height, {x: Double -> cos(x)})
+                                val functionChart = chart.build()
                                 val previous = functionChart[0]
                                 val gc = canvas.graphicsContext2D
                                 gc.clearRect(0.0, 0.0, canvas.width, canvas.height)
                                 gc.lineWidth = 1.0
                                 gc.fill = Color.BLACK
-                                gc.moveTo(previous.x.toDouble(), previous.y.toDouble())
+                                gc.moveTo(previous.x, previous.y)
                                 gc.beginPath()
 
                                 for (i in 1 until functionChart.size) {
                                     val current = functionChart[i]
-                                    gc.lineTo(current.x.toDouble(), current.y.toDouble())
+                                    gc.lineTo(current.x, current.y)
                                 }
                                 gc.stroke()
                                 drawXAxis(chart)
@@ -83,9 +83,7 @@ class DrawingView: View() {
                             }
                             action {
                                 val gc = canvas.graphicsContext2D
-                                gc.fill = Color.WHITE
-                                gc.fillRect(0.0, 0.0, canvas.width, canvas.height)
-//                                gc.clearRect(0.0, 0.0, canvas.width, canvas.height)
+                                gc.clearRect(0.0, 0.0, canvas.width, canvas.height)
                             }
                         }
                     }
@@ -105,19 +103,19 @@ class DrawingView: View() {
         val xAxis = chart.calcXAxis()
         val gc = canvas.graphicsContext2D
         gc.lineWidth = 1.0
-        gc.moveTo(xAxis.x0.toDouble(), xAxis.y0.toDouble())
-        gc.lineTo(xAxis.x1.toDouble(), xAxis.y1.toDouble())
+        gc.moveTo(xAxis.x0, xAxis.y0)
+        gc.lineTo(xAxis.x1, xAxis.y1)
 
         var x = 0.0
         val notchY0 = if (xAxis.y0 + 5 <= canvas.height) {
-            (xAxis.y0 + 5).toDouble()
+            (xAxis.y0 + 5)
         } else {
-            xAxis.y0.toDouble()
+            xAxis.y0
         }
         val notchY1 = if (xAxis.y0 - 5 >= 0) {
-            (xAxis.y0 - 5).toDouble()
+            (xAxis.y0 - 5)
         } else {
-            xAxis.y0.toDouble()
+            xAxis.y0
         }
         val step = xAxis.step
         while (x < canvas.width) {
@@ -132,19 +130,19 @@ class DrawingView: View() {
         val yAxis = chart.calcYAxis()
         val gc = canvas.graphicsContext2D
         gc.lineWidth = 1.0
-        gc.moveTo(yAxis.x0.toDouble(), yAxis.y0.toDouble())
-        gc.lineTo(yAxis.x1.toDouble(), yAxis.y1.toDouble())
+        gc.moveTo(yAxis.x0, yAxis.y0)
+        gc.lineTo(yAxis.x1, yAxis.y1)
 
         var y = 0.0
         val notchX0 = if (yAxis.x0 + 5 <= canvas.width) {
-            (yAxis.x0 + 5).toDouble()
+            yAxis.x0 + 5
         } else {
-            yAxis.x0.toDouble()
+            yAxis.x0
         }
         val notchX1 = if (yAxis.x0 - 5 >= 0) {
-            (yAxis.x0 - 5).toDouble()
+            yAxis.x0 - 5
         } else {
-            yAxis.x0.toDouble()
+            yAxis.x0
         }
         val step = yAxis.step
         while (y < canvas.height) {
@@ -159,9 +157,7 @@ class DrawingView: View() {
 
 class Point(val x: Double, val y: Double)
 
-class IntPoint(val x: Int, val y: Int)
-
-class Chart(private val left: Double, private val right: Double, private val canvasWidth: Int, private val canvasHeight: Int,
+class Chart(private val left: Double, private val right: Double, private val canvasWidth: Double, private val canvasHeight: Double,
             private val function: (Double) -> Double
 ) {
     private var graphicWidth = right - left
@@ -171,18 +167,18 @@ class Chart(private val left: Double, private val right: Double, private val can
     private var maxValue = 0.0
 
     //TODO rename
-    fun drawChart(): List<IntPoint> {
+    fun build(): List<Point> {
         val xStep = (right - left) / canvasWidth
         calcFunctionValues(xStep)
         return functionValues.map { point ->
             val x = canvasWidth * (point.x - left) / graphicWidth
             val y = canvasHeight * (maxValue - point.y) / graphicHeight
-            IntPoint(x.roundToInt(), y.roundToInt())
+            Point(x, y)
         }
     }
 
     private fun calcFunctionValues(step: Double) {
-        functionValues = ArrayList(canvasWidth)
+        functionValues = ArrayList(canvasWidth.roundToInt())
         var x = left
         while(x <= right) {
             val y = function(x)
@@ -197,27 +193,27 @@ class Chart(private val left: Double, private val right: Double, private val can
     fun calcYAxis(): Axis {
         val step = canvasHeight / graphicHeight
         return if (left < 0 && 0 < right) {
-            val x = (canvasWidth * -left / graphicWidth).roundToInt()
-            Axis(x, 0, x, canvasHeight, step)
+            val x = canvasWidth * -left / graphicWidth
+            Axis(x, 0.0, x, canvasHeight, step)
         } else if (left >= 0) {
-            Axis(0, 0, 0, canvasHeight, step)
+            Axis(0.0, 0.0, 0.0, canvasHeight, step)
         } else {
-            Axis(canvasWidth, 0, canvasWidth, canvasHeight, step)
+            Axis(canvasWidth, 0.0, canvasWidth, canvasHeight, step)
         }
     }
 
     fun calcXAxis(): Axis {
         val step = canvasWidth / graphicWidth
         return if (minValue < 0 && 0 < maxValue) {
-            val y = (canvasHeight * (maxValue) / graphicHeight).roundToInt()
-            Axis(0, y, canvasWidth, y, step)
+            val y = canvasHeight * (maxValue) / graphicHeight
+            Axis(0.0, y, canvasWidth, y, step)
         } else if (maxValue >= 0) {
-            Axis(0, canvasHeight, canvasWidth, canvasHeight, step)
+            Axis(0.0, canvasHeight, canvasWidth, canvasHeight, step)
         } else {
-            Axis(0, 0, canvasWidth, 0, step)
+            Axis(0.0, 0.0, canvasWidth, 0.0, step)
         }
     }
 
 }
 
-class Axis(val x0: Int, val y0: Int, val x1:Int, val y1: Int, val step: Double)
+class Axis(val x0: Double, val y0: Double, val x1:Double, val y1: Double, val step: Double)
