@@ -2,11 +2,11 @@ package com.sfedu.mmcs
 
 import javafx.geometry.Insets
 import javafx.scene.canvas.Canvas
+import javafx.scene.control.ChoiceBox
 import javafx.scene.control.TextField
 import javafx.scene.layout.Pane
 import javafx.scene.paint.Color
 import tornadofx.*
-import kotlin.math.cos
 
 class DrawingView: View() {
 
@@ -15,6 +15,7 @@ class DrawingView: View() {
 
     private var leftXInput: TextField by singleAssign()
     private var rightXInput: TextField by singleAssign()
+    private var functionInput: ChoiceBox<FunctionDescription> by singleAssign()
 
     private var canvas: Canvas by singleAssign()
 
@@ -36,6 +37,15 @@ class DrawingView: View() {
                             }
                             label("LeftX")
                         }
+                        choicebox<FunctionDescription> {
+                            functionInput = hboxConstraints {
+                                margin = Insets(INSET)
+                            }
+                            items = observableListOf(FunctionDescription.PARABOLA, FunctionDescription.SIN,
+                                FunctionDescription.COS, FunctionDescription.ABS
+                            )
+                            value = items[0]
+                        }
                         button("Draw") {
                             hboxConstraints {
                                 margin = Insets(INSET)
@@ -46,7 +56,8 @@ class DrawingView: View() {
                                 if (leftX >= rightX) {
                                     throw RuntimeException("левая граница должна быть строго меньше правой")
                                 }
-                                val chart = Chart(leftX, rightX, canvas.width, canvas.height, {x: Double -> cos(x) })
+                                val function = functionInput.value
+                                val chart = Chart(leftX, rightX, canvas.width, canvas.height, function.function)
                                 val functionChart = chart.build()
                                 val previous = functionChart[0]
                                 val gc = canvas.graphicsContext2D
@@ -142,4 +153,15 @@ class DrawingView: View() {
         gc.stroke()
     }
 
+}
+
+enum class FunctionDescription(private val functionName: String, val function: (Double) -> Double) {
+    PARABOLA("x^2", {x: Double -> x * x }),
+    SIN("sin(x)", {x: Double -> kotlin.math.sin(x)}),
+    COS("cos(x)", {x: Double -> kotlin.math.cos(x)}),
+    ABS("|x|", {x: Double -> kotlin.math.abs(x)});
+
+    override fun toString(): String {
+        return functionName
+    }
 }
